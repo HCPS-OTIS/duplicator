@@ -26,7 +26,7 @@
     - NixOS distro with utilities (HCPoS)
       - Gparted
       - nslookup
-    - Mint
+    - Hiren's
 - Link to Endpoint Utilities
 ## Network traffic
 - http
