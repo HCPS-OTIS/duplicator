@@ -1,64 +1,57 @@
 #!/usr/bin/env bash
 
-# umount drive
-umount /dev/sd*
+PWD_SAVE=`pwd`
+
+BLUE='\033[0;36m'
+NC='\033[0m' # No Color
+TIME_START=$(date +%s)
+echo -e "${BLUE}Starting script at ${TIME_START}.${NC}"
+
+# umount drives
+parallel umount -- /dev/sd??*
 
 # exit if error
 set -e
 
 # iterate through all /dev/sd* drives but not partitions
-for DRIVE in /dev/sd*; do #parallel
-    if [[ ! $DRIVE =~ [0-9] ]]; then
-        # create partitions/filesystems
-        parted --script $DRIVE -- \
+parallel -i bash -c "parted --script {} -- \
             mktable msdos \
             mkpart primary fat32 2048s 2000MB \
-            mkpart primary ntfs 2000MB -1s
-        echo "Partitions created on "$DRIVE"."
-
-        mkfs.vfat -n BOOT $DRIVE'1'
-        mkfs.ntfs -f -L DATA $DRIVE'2'
-        echo "Filesystems created on "$DRIVE"."
-    fi
-done
+            mkpart primary ntfs 2000MB -1s" -- /dev/sd?
+parallel mkfs.vfat -n BOOT -- /dev/sd?1
+parallel mkfs.ntfs -f -L DATA -- /dev/sd?2
+echo -e "${BLUE}Partitions and filesystems created in $(date -d"@$(($(date +%s)-TIME_START))" +%M:%S).${NC}"
 
 # partimage FAT32 partitions
-for DRIVE in /dev/sd*; do
-    if [[ ! $DRIVE =~ [0-9] ]]; then
-        partimage -b restore $DRIVE'1' $(dirname $0)/boot.partimg.000 #parallel
-        echo "Boot partition populated on "$DRIVE"."
-    fi
-done
+parallel -i partimage -B= restore {} $(dirname $0)/boot.partimg.000 -- /dev/sd?1
+echo -e "${BLUE}Imaged BOOT partitions in $(date -d"@$(($(date +%s)-TIME_START))" +%M:%S).${NC}"
 
 # create mountpoints and mount data partitions
-for DRIVE in /dev/sd*; do
-    if [[ ! $DRIVE =~ [0-9] ]]; then
-        LETTER=${DRIVE:7:1}
-        mkdir -p '/mnt/sd'$LETTER'_data'
-        mount $DRIVE'2' '/mnt/sd'$LETTER'_data'
-        echo "Mounted "$DRIVE"2."
-    fi
-done
+parallel -i mkdir -p /mnt{} -- /dev/sd?2
+parallel -i mount {} /mnt{} -- /dev/sd?2
+echo -e "${BLUE}Mounted drives in $(date -d"@$(($(date +%s)-TIME_START))" +%M:%S).${NC}"
 
 # create directory structure on drives
-for DRIVE in /mnt/sd*; do
-    find $(dirname $0)/images/ -type d | sed "s|^.*images/*|"$DRIVE"/|" | xargs --replace=% mkdir -p "%"
+cd $(dirname $0)/images
+IFS=$'\n'
+for DIR in $(find * -type d) $(find .* -type d); do
+    parallel -i mkdir -p {}/$DIR -- /mnt/dev/sd?2
 done
-echo "Directories created."
+echo -e "${BLUE}Directories created in $(date -d"@$(($(date +%s)-TIME_START))" +%M:%S).${NC}"
 
 # copy files onto drive
-IFS=$'\n'
-for FILE in $(find $(dirname $0)/images/ -type f); do
-    FILE=$(echo $FILE | sed "s|^.*images/*||")
+LETTER=$(ls -1 /mnt/dev/ | tail -c 3 | head -c 1)
+for FILE in $(find * -type f) $(find .* -type f); do
     echo Copying file: $FILE
-    cat $(dirname $0)/images/$FILE | eval "tee /mnt/sd{a..$LETTER}_data/\"$FILE\"" > /dev/null
+    cat $FILE | eval "tee /mnt/dev/sd{a..$LETTER}2/\"$FILE\"" > /dev/null
 done
-echo "Files copied."
+echo -e "${BLUE}Files copied in $(date -d"@$(($(date +%s)-TIME_START))" +%M:%S), syncing drives...${NC}"
 
 # unmount drive
-for MOUNTPOINT in /mnt/sd*_data; do
-    umount $MOUNTPOINT #parallel
-done
-echo "All drives unmounted."
+parallel umount -- /dev/sd??*
+parallel rmdir -- /mnt/dev/sd?2
+echo -e "${BLUE}All drives unmounted.${NC}"
 
-echo "All drives created successfully."
+cd $PWD_SAVE
+
+echo -e "${BLUE}All drives created successfully in $(date -d"@$(($(date +%s)-TIME_START))" +%M:%S).${NC}"
