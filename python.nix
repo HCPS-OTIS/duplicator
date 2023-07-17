@@ -8,12 +8,18 @@ with import <nixpkgs> {};
 
       src = fetchPypi {
         inherit pname version;
-        hash = "sha256-Io06fbhszK0iIqFxxoADhojWysLhDRxHFeO3Z/cnJuo=";
+        hash = "sha256-YXeyCxfegh6lgFFUOMqdvNxDam4esX+cXjV1MfuHqFU=";
       };
+
+      propagatedBuildInputs = [
+        pkgs.python311Packages.tornado
+        pkgs.python311Packages.user-agents
+        pkgs.python311Packages.ua-parser
+      ];
     };
 
   in python311.withPackages (ps: with ps; [
-    requests
+    tornado
     pywebio
   ])
 ).env
