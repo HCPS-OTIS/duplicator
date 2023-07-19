@@ -1,3 +1,5 @@
 *partimg*
+.vscode
+venv/
 boot/
 images/
