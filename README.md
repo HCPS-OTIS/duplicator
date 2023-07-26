@@ -15,7 +15,7 @@
   - Student
   - Student (Clonezilla)
   - Staff (Image Assist)  
-  Allow driver pack selection:
+    Allow driver pack selection:
       - Latitiude 3310
       - Latitiude 3330
       - Optiplex 5000
