@@ -1,0 +1,20 @@
+.form-check {
+    width: fit-content;
+    border-radius: 5px;
+    padding: 1px 4px 2px 25px;
+    transition: all .2s;
+    cursor: pointer;
+}
+
+.form-check:hover {
+    background: rgba(0, 0, 255, 0.15);
+}
+
+.form-check-label {
+    cursor: pointer;
+}
+
+input[type=radio],
+input[type=checkbox] {
+    cursor: pointer;
+}
