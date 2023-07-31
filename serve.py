@@ -32,7 +32,7 @@ def create_clonezilla(drives: list[str]):
     output.put_text('Drives unmounted')
 
     # create partitions
-    run_script(['partition_dual.sh', '3000'] + drives)
+    run_script(['partition_dual.sh', '2000'] + drives)
     run_script(['ntfs.sh'] + [d+'2' for d in drives])
 
     output.put_text('Partitions and NTFS filesystems created')
